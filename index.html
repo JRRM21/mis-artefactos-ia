@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>📚 Mis Artefactos IA — Vista Avanzada</title>
+  <meta name="theme-color" content="#667eea"/>
+  <style>
+    :root{
+      --bg1:#667eea; --bg2:#764ba2;
+      --card:#ffffff; --text:#1f2937; --muted:#6b7280;
+      --ring:#e5e7eb; --accent:#667eea; --accent2:#764ba2;
+    }
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{
+      font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-serif;
+      background:linear-gradient(135deg,var(--bg1),var(--bg2));
+      min-height:100vh; color:var(--text); padding:16px;
+    }
+    .container{max-width:1100px;margin:0 auto}
+    header{text-align:center; color:#fff; margin-bottom:18px}
+    header h1{font-size:2.15rem; text-shadow:0 2px 6px rgba(0,0,0,.25); margin-bottom:6px}
+    header p{opacity:.95}
+
+    /* top controls */
+    .controls{display:flex; gap:10px; align-items:center; flex-wrap:wrap; margin:14px 0}
+    .search{flex:1; position:relative}
+    .search input{
+      width:100%; padding:12px 40px 12px 38px; border-radius:10px; border:2px solid var(--ring);
+      outline:none; transition: .2s background, .2s transform;
+    }
+    .search input:focus{transform:scale(1.01); border-color:#c7d2fe; box-shadow:0 0 0 4px rgba(102,126,234,.12)}
+    .search .icon{position:absolute; left:12px; top:50%; transform:translateY(-50%)}
+    select, .btn{
+      padding:10px 12px; border-radius:10px; border:2px solid var(--ring); background:#fff; cursor:pointer;
+    }
+    .btn{border:none; background:linear-gradient(45deg,var(--bg1),var(--bg2)); color:#fff; font-weight:700; box-shadow:0 8px 20px rgba(102,126,234,.3)}
+    .btn.secondary{background:#fff; color:var(--text); border:2px solid var(--ring); box-shadow:none; font-weight:600}
+    .btn.small{padding:8px 10px; font-size:.9rem}
+    .badges{display:flex; gap:8px; flex-wrap:wrap; margin:8px 0 12px}
+    .badge{background:rgba(255,255,255,.95); backdrop-filter:blur(8px); padding:8px 12px; border-radius:12px; box-shadow:0 4px 12px rgba(0,0,0,.15); display:flex; gap:8px; align-items:center}
+    .kpi{font-weight:800; color:#fff}
+
+    /* views */
+    .grid{display:grid; gap:14px; grid-template-columns:repeat(auto-fill, minmax(290px,1fr))}
+    .card{
+      background:var(--card); border-radius:16px; padding:16px;
+      box-shadow:0 8px 22px rgba(0,0,0,.12); border-left:4px solid var(--accent);
+      transition:.2s transform,.2s box-shadow;
+      position:relative;
+    }
+    .card:hover{transform:translateY(-3px); box-shadow:0 14px 30px rgba(0,0,0,.18)}
+    .title{display:flex; gap:10px; align-items:flex-start; margin-bottom:8px}
+    .emoji{font-size:1.8rem; min-width:36px; text-align:center}
+    .name{font-size:1.05rem; font-weight:800}
+    .type{display:inline-block; margin-top:4px; padding:2px 10px; border-radius:999px; font-size:.75rem; font-weight:700; background:var(--accent); color:#fff}
+    .desc{color:var(--muted); margin:10px 0}
+    .tags{display:flex; gap:6px; flex-wrap:wrap; margin:8px 0}
+    .tag{border:1px solid var(--ring); padding:2px 8px; border-radius:999px; font-size:.8rem; color:#374151; background:#f8fafc}
+    .meta{font-size:.82rem; color:#6b7280; margin-top:6px}
+    .actions{display:flex; gap:8px; flex-wrap:wrap; margin-top:10px}
+    .favorite{position:absolute; top:8px; right:8px; border:none; background:transparent; font-size:1.2rem; cursor:pointer; filter:drop-shadow(0 2px 4px rgba(0,0,0,.2))}
+    .favorite.active{color:#f59e0b}
+
+    /* icon view */
+    .icons{display:grid; gap:12px; grid-template-columns:repeat(auto-fill,minmax(120px,1fr))}
+    .iconCard{
+      background:#fff; border-radius:16px; padding:16px; text-align:center; box-shadow:0 8px 22px rgba(0,0,0,.12);
+      transition:.2s transform; cursor:pointer; display:flex; flex-direction:column; gap:8px; min-height:120px; position:relative;
+    }
+    .iconCard:hover{transform:translateY(-4px)}
+    .iconCard .ic{font-size:2.3rem}
+    .iconCard .nm{font-weight:800; font-size:.95rem}
+    .iconCard .tb{font-size:.75rem; color:#6b7280; margin-top:auto}
+    .iconCard.no-url{opacity:.75; cursor:default}
+
+    .footer{margin:20px 0 6px; text-align:center; color:#e5e7eb}
+    .toast{
+      position:fixed; bottom:16px; left:50%; transform:translateX(-50%);
+      background:#111827; color:#fff; padding:10px 14px; border-radius:10px; font-size:.9rem;
+      box-shadow:0 8px 24px rgba(0,0,0,.35); opacity:0; transition:.2s; pointer-events:none
+    }
+    .toast.show{opacity:1; pointer-events:auto}
+
+    /* responsive tweaks */
+    @media (max-width:768px){
+      header h1{font-size:1.7rem}
+      .grid{grid-template-columns:1fr}
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>📚 Mis Artefactos IA</h1>
+      <p>Tu cajón de herramientas IA en el móvil — versión avanzada</p>
+    </header>
+
+    <!-- KPIs -->
+    <div class="badges" id="kpis">
+      <div class="badge">📦 Total: <span class="kpi" id="kpi-total">0</span></div>
+      <div class="badge">🗂️ Tipos: <span class="kpi" id="kpi-types">0</span></div>
+      <div class="badge">⭐ Favoritos: <span class="kpi" id="kpi-favs">0</span></div>
+      <div class="badge">🗓️ Este mes: <span class="kpi" id="kpi-month">0</span></div>
+    </div>
+
+    <!-- Controls -->
+    <div class="controls">
+      <div class="search">
+        <span class="icon">🔍</span>
+        <input id="q" placeholder="Buscar por nombre, descripción o tags…">
+      </div>
+      <select id="filterType" title="Filtrar por tipo">
+        <option value="">Todos</option>
+        <option value="web">🌐 Web</option>
+        <option value="app">📱 App</option>
+        <option value="juego">🎮 Juego</option>
+        <option value="herramienta">🔧 Herramienta</option>
+        <option value="arte">🎨 Arte</option>
+        <option value="otro">📄 Otro</option>
+        <option value="favorites">⭐ Favoritos</option>
+      </select>
+      <select id="sortBy" title="Ordenar">
+        <option value="newest">🕐 Más recientes</option>
+        <option value="name">🔤 Nombre</option>
+        <option value="type">📂 Tipo</option>
+        <option value="modified">✏️ Editados</option>
+        <option value="favorites">⭐ Favoritos primero</option>
+      </select>
+      <button class="btn secondary" id="viewCards">📋 Tarjetas</button>
+      <button class="btn secondary" id="viewIcons">🧊 Cuadrícula</button>
+      <button class="btn" id="btnExport">📤 Exportar</button>
+      <button class="btn secondary" id="btnImport">📂 Importar</button>
+      <input type="file" id="importFile" accept=".json" style="display:none"/>
+    </div>
+
+    <!-- Views -->
+    <div id="view"></div>
+
+    <p class="footer">Guardado local (localStorage). Exporta como copia de seguridad cuando quieras.</p>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script>
+    // ------- Datos iniciales (se cargan 1 sola vez si no hay nada en localStorage) -------
+    const INITIAL = [
+      // Reales (con URL)
+      { id: Date.now()-5, name: "📘 Cuaderno Azul", type:"web",
+        url:"https://cuaderno-azul.vercel.app/", icon:"📘",
+        description:"Cuaderno-portfolio sencillo, optimizado para móvil.",
+        tags:["portfolio","web","azul"], favorite:true, createdAt:new Date().toISOString(), lastModified:new Date().toISOString() },
+      { id: Date.now()-4, name: "🪟 Ventana Azul", type:"web",
+        url:"https://ventana-azul.vercel.app/", icon:"🔵",
+        description:"Ventana/landing azul minimal para anuncios y enlaces.",
+        tags:["landing","minimal"], favorite:false, createdAt:new Date().toISOString(), lastModified:new Date().toISOString() },
+      { id: Date.now()-3, name: "📍 Botón Localizador JR", type:"herramienta",
+        url:"https://boton-localizador-jr.vercel.app/", icon:"📍",
+        description:"Botón rápido para compartir ubicación por WhatsApp/SMS.",
+        tags:["utilidad","gps","whatsapp"], favorite:true, createdAt:new Date().toISOString(), lastModified:new Date().toISOString() },
+
+      // Placeholders (sin URL por ahora)
+      { id: Date.now()-2, name: "⏰ Reloj Cibernético", type:"app",
+        url:"", icon:"⏰", description:"Temporizador/alarma inteligente (placeholder).",
+        tags:["tiempo","alarma"], favorite:false, createdAt:new Date().toISOString(), lastModified:new Date().toISOString() },
+      { id: Date.now()-1, name: "🎙️ Tu Voz con Alma", type:"app",
+        url:"", icon:"🎙️", description:"Narrador con tu voz y música (placeholder).",
+        tags:["audio","voz","música"], favorite:false, createdAt:new Date().toISOString(), lastModified:new Date().toISOString() },
+      { id: Date.now(), name: "🔵 Botón Azul (Memoria Externa)", type:"herramienta",
+        url:"", icon:"🔵", description:"Atajo de memoria externa rápida (placeholder).",
+        tags:["memoria","atajos"], favorite:false, createdAt:new Date().toISOString(), lastModified:new Date().toISOString() },
+      { id: Date.now()+1, name: "🧓 Help Senior Citizens", type:"web",
+        url:"", icon:"🧓", description:"Centro de accesos para mayores (placeholder).",
+        tags:["ayuda","accesibilidad"], favorite:false, createdAt:new Date().toISOString(), lastModified:new Date().toISOString() },
+      { id: Date.now()+2, name: "🎵 IA Música con Alma", type:"arte",
+        url:"", icon:"🎵", description:"Fondos musicales generativos (placeholder).",
+        tags:["música","creativo"], favorite:false, createdAt:new Date().toISOString(), lastModified:new Date().toISOString() },
+      { id: Date.now()+3, name: "🟠 Botón Naranja (Primeros Auxilios)", type:"herramienta",
+        url:"", icon:"🟠", description:"Accesos rápidos a ayuda/ICE (placeholder).",
+        tags:["salud","emergencias"], favorite:false, createdAt:new Date().toISOString(), lastModified:new Date().toISOString() },
+    ];
+
+    const KEY = "aiProjects";
+    let projects = [];
+    let viewMode = localStorage.getItem("viewMode") || "cards";
+    let search = ""; let filter = ""; let sortBy = "newest";
+
+    function load(){
+      const raw = localStorage.getItem(KEY);
+      if(!raw){
+        // Seed initial once
+        projects = INITIAL;
+        save(); return;
+      }
+      try{ projects = JSON.parse(raw); }
+      catch{ projects = INITIAL; save(); }
+    }
+    function save(){ localStorage.setItem(KEY, JSON.stringify(projects)); }
+
+    function toast(msg){
+      const t = document.getElementById("toast");
+      t.textContent = msg; t.classList.add("show");
+      setTimeout(()=>t.classList.remove("show"), 1800);
+    }
+
+    function typeLabel(t){
+      return ({web:"🌐 Web",app:"📱 App",juego:"🎮 Juego",herramienta:"🔧 Herramienta",arte:"🎨 Arte",otro:"📄 Otro"})[t] || "📄 Otro";
+    }
+
+    function kpis(){
+      const elTotal = document.getElementById("kpi-total");
+      const elTypes = document.getElementById("kpi-types");
+      const elFavs  = document.getElementById("kpi-favs");
+      const elMonth = document.getElementById("kpi-month");
+      const total = projects.length;
+      const types = new Set(projects.map(p=>p.type)).size;
+      const favs  = projects.filter(p=>p.favorite).length;
+      const now = new Date();
+      const month = projects.filter(p=>{
+        const d=new Date(p.createdAt); return d.getMonth()===now.getMonth() && d.getFullYear()===now.getFullYear();
+      }).length;
+      elTotal.textContent=total; elTypes.textContent=types; elFavs.textContent=favs; elMonth.textContent=month;
+    }
+
+    function sanitizeUrl(u){
+      if(!u) return "";
+      try{ const x = new URL(u); return (x.protocol==="http:"||x.protocol==="https:")? u : ""; }catch{ return "";}
+    }
+
+    // ---------- Render ----------
+    function render(){
+      kpis();
+      const root = document.getElementById("view");
+      const q = search.toLowerCase().trim();
+      let list = projects.slice();
+
+      // filter
+      if(q){
+        list = list.filter(p =>
+          (p.name||"").toLowerCase().includes(q) ||
+          (p.description||"").toLowerCase().includes(q) ||
+          (p.tags||[]).some(t => t.toLowerCase().includes(q))
+        );
+      }
+      if(filter==="favorites"){ list = list.filter(p => p.favorite); }
+      else if(filter){ list = list.filter(p => p.type===filter); }
+
+      // sort
+      switch(sortBy){
+        case "name": list.sort((a,b)=> (a.name||"").localeCompare(b.name||"")); break;
+        case "type": list.sort((a,b)=> (a.type||"").localeCompare(b.type||"") || (a.name||"").localeCompare(b.name||"")); break;
+        case "modified": list.sort((a,b)=> new Date(b.lastModified)-new Date(a.lastModified)); break;
+        case "favorites": list.sort((a,b)=> (b.favorite?1:0)-(a.favorite?1:0) || new Date(b.createdAt)-new Date(a.createdAt)); break;
+        default: list.sort((a,b)=> new Date(b.createdAt)-new Date(a.createdAt));
+      }
+
+      if(list.length===0){
+        root.innerHTML = `
+          <div style="text-align:center;background:rgba(255,255,255,.9);padding:28px;border-radius:16px;box-shadow:0 8px 22px rgba(0,0,0,.12)">
+            <div style="font-size:2.2rem">📱</div>
+            <h3 style="margin:8px 0 4px">No hay resultados</h3>
+            <p style="color:#6b7280">Prueba otros términos de búsqueda o filtros.</p>
+          </div>`;
+        return;
+      }
+
+      if(viewMode==="icons"){
+        root.innerHTML = `<div class="icons">${list.map(iconCard).join("")}</div>`;
+      }else{
+        root.innerHTML = `<div class="grid">${list.map(card).join("")}</div>`;
+      }
+    }
+
+    function card(p){
+      const link = sanitizeUrl(p.url);
+      const openBtn = link ? `<a class="btn small" target="_blank" rel="noopener" href="${link}">🌐 Abrir</a>` : "";
+      return `
+        <article class="card">
+          <button class="favorite ${p.favorite?'active':''}" title="Favorito" onclick="toggleFav(${p.id})">★</button>
+          <div class="title">
+            <div class="emoji">${escapeHtml(p.icon||"📦")}</div>
+            <div>
+              <div class="name">${escapeHtml(p.name||"Sin nombre")}</div>
+              <span class="type">${typeLabel(p.type)}</span>
+            </div>
+          </div>
+          ${p.description ? `<p class="desc">${escapeHtml(p.description)}</p>` : ""}
+          ${Array.isArray(p.tags)&&p.tags.length? `<div class="tags">${p.tags.map(t=>`<span class="tag">${escapeHtml(t)}</span>`).join("")}</div>` : ""}
+          <div class="meta">Creado: ${formatDate(p.createdAt)}${p.lastModified && p.lastModified!==p.createdAt ? ` • Modificado: ${formatDate(p.lastModified)}`:""}</div>
+          <div class="actions">
+            ${openBtn}
+            <button class="btn small secondary" onclick="copyShare(${p.id})">📤 Compartir</button>
+            <button class="btn small secondary" onclick="editItem(${p.id})">✏️ Editar</button>
+            <button class="btn small secondary" onclick="removeItem(${p.id})">🗑️ Borrar</button>
+          </div>
+        </article>`;
+    }
+
+    function iconCard(p){
+      const link = sanitizeUrl(p.url);
+      const base = `<div class="iconCard ${link?'':'no-url'}" ${link?`onclick="window.open('${link}','_blank')"`:""}>
+        <div class="ic">${escapeHtml(p.icon||"📦")}</div>
+        <div class="nm">${escapeHtml(p.name||"Sin nombre")}</div>
+        <div class="tb">${typeLabel(p.type)}</div>
+        <button class="favorite ${p.favorite?'active':''}" title="Favorito" onclick="event.stopPropagation(); toggleFav(${p.id})">★</button>
+      </div>`;
+      return base;
+    }
+
+    function escapeHtml(s=""){return s.replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+    function formatDate(d){ try{ const x=new Date(d); return x.toLocaleDateString('es-ES',{year:'numeric',month:'short',day:'numeric'});}catch{return '';}}
+
+    // ---------- Actions ----------
+    function toggleFav(id){
+      projects = projects.map(p=> p.id===id ? {...p, favorite:!p.favorite, lastModified:new Date().toISOString()} : p);
+      save(); render();
+    }
+    function copyShare(id){
+      const p = projects.find(x=>x.id===id); if(!p) return;
+      const text = `🚀 ${p.name}\n${p.description||''}\n${p.url||'(sin URL aún)'}`.trim();
+      navigator.clipboard.writeText(text).then(()=>toast("📋 Copiado para compartir"));
+    }
+    function removeItem(id){
+      if(!confirm("¿Eliminar este artefacto?")) return;
+      projects = projects.filter(p=>p.id!==id);
+      save(); render();
+    }
+    function editItem(id){
+      const p = projects.find(x=>x.id===id); if(!p) return;
+      const name = prompt("Nombre", p.name||"");
+      if(name===null) return;
+      const url = prompt("URL (https://…)", p.url||"");
+      if(url===null) return;
+      const desc = prompt("Descripción", p.description||"");
+      if(desc===null) return;
+      const icon = prompt("Emoji/Icono", p.icon||"📦");
+      if(icon===null) return;
+      const type = prompt("Tipo (web, app, juego, herramienta, arte, otro)", p.type||"web");
+      if(type===null) return;
+      const tags = prompt("Tags separadas por comas", (p.tags||[]).join(", "));
+      if(tags===null) return;
+      const tarr = tags.split(",").map(t=>t.trim()).filter(Boolean);
+      projects = projects.map(x=> x.id===id ? ({...x, name, url, description:desc, icon, type, tags:tarr, lastModified:new Date().toISOString()}) : x);
+      save(); render();
+    }
+
+    // ---------- Import/Export ----------
+    function exportAll(){
+      const blob = new Blob([JSON.stringify({projects, exportDate:new Date().toISOString()}, null, 2)], {type:"application/json"});
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = "mis-artefactos-ia.json";
+      document.body.appendChild(a); a.click(); a.remove();
+      URL.revokeObjectURL(a.href);
+      toast("💾 Exportado");
+    }
+    function importAll(file){
+      const reader = new FileReader();
+      reader.onload = e => {
+        try{
+          const data = JSON.parse(e.target.result);
+          if(!data.projects || !Array.isArray(data.projects)) throw new Error("Formato inválido");
+          // merge evitando duplicados por nombre
+          const names = new Set(projects.map(p=> (p.name||"").toLowerCase()));
+          const news = data.projects.filter(p=> !names.has((p.name||"").toLowerCase()));
+          projects = [...projects, ...news];
+          save(); render(); toast("✅ Importado");
+        }catch{ toast("❌ Archivo inválido"); }
+      };
+      reader.readAsText(file);
+    }
+
+    // ---------- Events ----------
+    document.getElementById("q").addEventListener("input", e=>{ search=e.target.value; render(); });
+    document.getElementById("filterType").addEventListener("change", e=>{ filter=e.target.value; render(); });
+    document.getElementById("sortBy").addEventListener("change", e=>{ sortBy=e.target.value; render(); });
+    document.getElementById("viewCards").addEventListener("click", ()=>{ viewMode="cards"; localStorage.setItem("viewMode","cards"); render(); });
+    document.getElementById("viewIcons").addEventListener("click", ()=>{ viewMode="icons"; localStorage.setItem("viewMode","icons"); render(); });
+    document.getElementById("btnExport").addEventListener("click", exportAll);
+    document.getElementById("btnImport").addEventListener("click", ()=> document.getElementById("importFile").click());
+    document.getElementById("importFile").addEventListener("change", e=>{ if(e.target.files[0]) importAll(e.target.files[0]); e.target.value=""; });
+
+    // ---------- Init ----------
+    load();
+    render();
+  </script>
+</body>
+</html>
